@@ -1,0 +1,38 @@
+# ──────────────────────────────────────────────
+# Fill in your Azure subscription and tenant IDs
+# ──────────────────────────────────────────────
+subscription_id = ""
+tenant_id       = ""
+
+# ──────────────────────────────────────────────
+# General
+# ──────────────────────────────────────────────
+project     = "accountsvc"
+environment = "dev"
+location    = "eastus"
+
+# ──────────────────────────────────────────────
+# Networking
+# ──────────────────────────────────────────────
+vnet_address_space   = ["10.0.0.0/16"]
+aks_subnet_cidr      = "10.0.0.0/20"
+postgres_subnet_cidr = "10.0.16.0/24"
+
+# ──────────────────────────────────────────────
+# AKS
+# ──────────────────────────────────────────────
+kubernetes_version  = "1.29"
+system_node_count   = 1
+system_node_vm_size = "Standard_B2s"
+
+# ──────────────────────────────────────────────
+# PostgreSQL
+# ──────────────────────────────────────────────
+postgres_sku        = "B_Standard_B1ms"
+postgres_storage_mb = 32768
+
+# Pass these via CLI or env vars to avoid storing secrets in tfvars:
+#   terraform plan -var="postgres_admin_username=pgadmin" -var="postgres_admin_password=YourStr0ngP@ss!"
+# Or export:
+#   export TF_VAR_postgres_admin_username="pgadmin"
+#   export TF_VAR_postgres_admin_password="YourStr0ngP@ss!"
