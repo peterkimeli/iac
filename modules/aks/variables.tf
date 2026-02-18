@@ -33,7 +33,19 @@ variable "system_node_count" {
 variable "system_node_vm_size" {
   description = "VM size for system nodes"
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2s_v2"
+}
+
+variable "system_node_min_count" {
+  description = "Minimum number of system nodes (autoscaler)"
+  type        = number
+  default     = 1
+}
+
+variable "system_node_max_count" {
+  description = "Maximum number of system nodes (autoscaler)"
+  type        = number
+  default     = 3
 }
 
 variable "enable_app_node_pool" {
@@ -45,7 +57,7 @@ variable "enable_app_node_pool" {
 variable "app_node_vm_size" {
   description = "VM size for app nodes"
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2s_v2"
 }
 
 variable "app_node_count" {
@@ -64,12 +76,6 @@ variable "app_node_max_count" {
   description = "Maximum number of app nodes (autoscaler)"
   type        = number
   default     = 3
-}
-
-variable "enable_auto_scaling" {
-  description = "Enable node autoscaler"
-  type        = bool
-  default     = false
 }
 
 variable "os_disk_size_gb" {

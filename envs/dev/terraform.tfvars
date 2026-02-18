@@ -21,9 +21,17 @@ postgres_subnet_cidr = "10.0.16.0/24"
 # ──────────────────────────────────────────────
 # AKS
 # ──────────────────────────────────────────────
-kubernetes_version  = "1.34"
-system_node_count   = 1
-system_node_vm_size = "Standard_B2s"
+kubernetes_version    = "1.34"
+system_node_count     = 1
+system_node_vm_size   = "Standard_B2s_v2"
+system_node_min_count = 1
+system_node_max_count = 3
+
+# App (user) node pool
+app_node_vm_size  = "Standard_B2s_v2"
+app_node_count    = 1
+app_node_min_count = 1
+app_node_max_count = 5
 
 # ──────────────────────────────────────────────
 # PostgreSQL

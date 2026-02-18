@@ -7,13 +7,21 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   default_node_pool {
     name                = "system"
-    node_count          = var.system_node_count
     vm_size             = var.system_node_vm_size
     vnet_subnet_id      = var.aks_subnet_id
     os_disk_size_gb     = var.os_disk_size_gb
     max_pods            = 50
     type                = "VirtualMachineScaleSets"
     zones               = var.availability_zones
+
+    # Autoscaling
+    enable_auto_scaling = true
+    node_count          = var.system_node_count
+    min_count           = var.system_node_min_count
+    max_count           = var.system_node_max_count
+
+    # Reserve system pool for system workloads only
+    only_critical_addons_enabled = true
 
     upgrade_settings {
       max_surge = "10%"
@@ -50,26 +58,27 @@ resource "azurerm_kubernetes_cluster" "main" {
   tags = var.tags
 }
 
-# App node pool for workloads
+# App (user) node pool for workloads
 resource "azurerm_kubernetes_cluster_node_pool" "app" {
   count                 = var.enable_app_node_pool ? 1 : 0
   name                  = "app"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.main.id
   vm_size               = var.app_node_vm_size
-  node_count            = var.app_node_count
-  min_count             = var.app_node_min_count
-  max_count             = var.app_node_max_count
-  enable_auto_scaling   = var.enable_auto_scaling
   vnet_subnet_id        = var.aks_subnet_id
   os_disk_size_gb       = var.os_disk_size_gb
   zones                 = var.availability_zones
   max_pods              = 50
+  mode                  = "User"
+
+  # Autoscaling
+  enable_auto_scaling   = true
+  node_count            = var.app_node_count
+  min_count             = var.app_node_min_count
+  max_count             = var.app_node_max_count
 
   node_labels = {
     "workload" = "app"
   }
-
-  node_taints = []
 
   upgrade_settings {
     max_surge = "10%"

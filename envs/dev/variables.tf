@@ -97,3 +97,42 @@ variable "postgres_storage_mb" {
   type        = number
   default     = 32768
 }
+
+# ──────────────────────────────────────────────
+# AKS – Autoscaling
+# ──────────────────────────────────────────────
+variable "system_node_min_count" {
+  description = "Minimum system nodes (autoscaler)"
+  type        = number
+  default     = 1
+}
+
+variable "system_node_max_count" {
+  description = "Maximum system nodes (autoscaler)"
+  type        = number
+  default     = 3
+}
+
+variable "app_node_vm_size" {
+  description = "VM size for app/user nodes"
+  type        = string
+  default     = "Standard_B2s_v2"
+}
+
+variable "app_node_count" {
+  description = "Initial number of app nodes"
+  type        = number
+  default     = 1
+}
+
+variable "app_node_min_count" {
+  description = "Minimum app nodes (autoscaler)"
+  type        = number
+  default     = 1
+}
+
+variable "app_node_max_count" {
+  description = "Maximum app nodes (autoscaler)"
+  type        = number
+  default     = 5
+}

@@ -69,11 +69,17 @@ module "aks" {
   kubernetes_version   = var.kubernetes_version
   system_node_count    = var.system_node_count
   system_node_vm_size  = var.system_node_vm_size
+  system_node_min_count = var.system_node_min_count
+  system_node_max_count = var.system_node_max_count
   aks_subnet_id        = module.networking.aks_subnet_id
   tenant_id            = var.tenant_id
   acr_id               = module.acr.acr_id
   enable_acr_integration = true
-  enable_app_node_pool = false
+  enable_app_node_pool = true
+  app_node_vm_size     = var.app_node_vm_size
+  app_node_count       = var.app_node_count
+  app_node_min_count   = var.app_node_min_count
+  app_node_max_count   = var.app_node_max_count
   log_retention_days   = 30
   tags                 = local.tags
 
