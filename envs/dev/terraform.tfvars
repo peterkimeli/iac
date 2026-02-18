@@ -9,7 +9,7 @@ tenant_id       = "db56775d-ae7e-493b-ac83-5ff500fc2fb1"
 # ──────────────────────────────────────────────
 project     = "accountsvc"
 environment = "dev"
-location    = "eastus2"
+location    = "southafricanorth"
 
 # ──────────────────────────────────────────────
 # Networking
@@ -21,7 +21,7 @@ postgres_subnet_cidr = "10.0.16.0/24"
 # ──────────────────────────────────────────────
 # AKS
 # ──────────────────────────────────────────────
-kubernetes_version  = "1.29"
+kubernetes_version  = "1.34"
 system_node_count   = 1
 system_node_vm_size = "Standard_B2s"
 
