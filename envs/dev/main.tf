@@ -16,6 +16,12 @@ resource "azurerm_resource_group" "main" {
   tags     = local.tags
 }
 
+# Brief pause to let the resource group propagate across Azure
+resource "time_sleep" "wait_for_rg" {
+  depends_on      = [azurerm_resource_group.main]
+  create_duration = "30s"
+}
+
 # ──────────────────────────────────────────────
 # Networking
 # ──────────────────────────────────────────────
@@ -30,6 +36,8 @@ module "networking" {
   aks_subnet_cidr     = var.aks_subnet_cidr
   postgres_subnet_cidr = var.postgres_subnet_cidr
   tags                = local.tags
+
+  depends_on = [time_sleep.wait_for_rg]
 }
 
 # ──────────────────────────────────────────────
@@ -44,6 +52,8 @@ module "acr" {
   resource_group_name = azurerm_resource_group.main.name
   acr_sku             = "Basic"
   tags                = local.tags
+
+  depends_on = [time_sleep.wait_for_rg]
 }
 
 # ──────────────────────────────────────────────
