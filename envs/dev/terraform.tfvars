@@ -1,8 +1,8 @@
 # ──────────────────────────────────────────────
 # Fill in your Azure subscription and tenant IDs
 # ──────────────────────────────────────────────
-subscription_id = ""
-tenant_id       = ""
+subscription_id = "50f529c1-ce1a-41ba-85ae-a60f5d0492bf"
+tenant_id       = "db56775d-ae7e-493b-ac83-5ff500fc2fb1"
 
 # ──────────────────────────────────────────────
 # General
