@@ -9,7 +9,7 @@ tenant_id       = "db56775d-ae7e-493b-ac83-5ff500fc2fb1"
 # ──────────────────────────────────────────────
 project     = "accountsvc"
 environment = "dev"
-location    = "eastus"
+location    = "eastus2"
 
 # ──────────────────────────────────────────────
 # Networking
