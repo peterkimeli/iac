@@ -5,6 +5,9 @@ resource "azurerm_kubernetes_cluster" "main" {
   dns_prefix          = "${var.project}-${var.environment}"
   kubernetes_version  = var.kubernetes_version
 
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
+
   default_node_pool {
     name                = "system"
     vm_size             = var.system_node_vm_size
