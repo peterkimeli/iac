@@ -90,7 +90,7 @@ resource "azurerm_log_analytics_workspace" "main" {
 
 # Grant AKS pull access to ACR
 resource "azurerm_role_assignment" "aks_acr_pull" {
-  count                            = var.acr_id != "" ? 1 : 0
+  count                            = var.enable_acr_integration ? 1 : 0
   principal_id                     = azurerm_kubernetes_cluster.main.kubelet_identity[0].object_id
   role_definition_name             = "AcrPull"
   scope                            = var.acr_id

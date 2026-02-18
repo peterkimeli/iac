@@ -62,6 +62,7 @@ module "aks" {
   aks_subnet_id        = module.networking.aks_subnet_id
   tenant_id            = var.tenant_id
   acr_id               = module.acr.acr_id
+  enable_acr_integration = true
   enable_app_node_pool = false
   log_retention_days   = 30
   tags                 = local.tags

@@ -118,6 +118,12 @@ variable "acr_id" {
   default     = ""
 }
 
+variable "enable_acr_integration" {
+  description = "Whether to grant AKS pull access to ACR"
+  type        = bool
+  default     = false
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
