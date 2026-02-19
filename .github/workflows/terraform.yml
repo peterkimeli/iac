@@ -85,7 +85,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   # AI Infrastructure Review
   # Analyzes Terraform plan output, tfsec security findings,
-  # and IaC code patterns, then posts an AI summary.
+  # and IaC code patterns, then posts a summary.
   # ─────────────────────────────────────────────────────────────
   ai-infra-review:
     name: AI Infrastructure Review
