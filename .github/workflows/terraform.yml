@@ -213,56 +213,59 @@ jobs:
             readTfFiles('envs/dev');
 
             // --- Build AI prompt ---
-            const prompt = `You are a senior cloud infrastructure engineer specializing in Azure and Terraform. Analyze this IaC pipeline data for a fintech microservice deployment.
-
-## Project: Fintech Account Service — Azure Infrastructure (AKS + PostgreSQL + ACR)
-## Region: South Africa North
-
-## Terraform Plan Summary
-- Resources to add: ${process.env.PLAN_ADD}
-- Resources to change: ${process.env.PLAN_CHANGE}
-- Resources to destroy: ${process.env.PLAN_DESTROY}
-
-## Plan Details (excerpt)
-${planText.substring(0, 4000)}
-
-## Security Scan (tfsec)
-- Critical: ${process.env.TFSEC_CRITICAL}
-- High: ${process.env.TFSEC_HIGH}
-- Medium: ${process.env.TFSEC_MEDIUM}
-- Low: ${process.env.TFSEC_LOW}
-
-### Findings
-${tfsecDetails}
-
-## IaC Stats
-- Terraform files: ${process.env.TF_FILES}
-- Resource definitions: ${process.env.TF_RESOURCES}
-- Module references: ${process.env.TF_MODULES}
-
-## Terraform Source Code
-${tfCode.substring(0, 6000)}
-
-Provide your analysis in this EXACT format:
-
-### 🏆 Infrastructure Score: X/10
-
-### 🔄 Plan Risk Assessment
-(analyze planned changes — flag any destructive operations, resource replacements, or changes that could cause downtime for a fintech service)
-
-### 🔒 Security Analysis
-(evaluate tfsec findings, prioritize by severity, check for: network exposure, encryption at rest/transit, RBAC, secrets management, and fintech compliance concerns)
-
-### 💰 Cost & Sizing Review
-(evaluate VM sizes, SKUs, autoscaling configs, storage — suggest optimizations while maintaining reliability for a financial application)
-
-### 🏗️ Architecture Best Practices
-(evaluate module structure, networking design, HA/DR posture, monitoring, and Azure Well-Architected Framework alignment)
-
-### 📋 Top 5 Action Items
-(prioritized, specific, actionable improvements — focus on security and reliability for fintech)
-
-Be concise, specific to THIS infrastructure, and focus on fintech-relevant concerns (data protection, high availability, compliance).`;
+            const promptLines = [
+              'You are a senior cloud infrastructure engineer specializing in Azure and Terraform. Analyze this IaC pipeline data for a fintech microservice deployment.',
+              '',
+              '## Project: Fintech Account Service — Azure Infrastructure (AKS + PostgreSQL + ACR)',
+              '## Region: South Africa North',
+              '',
+              '## Terraform Plan Summary',
+              `- Resources to add: ${process.env.PLAN_ADD}`,
+              `- Resources to change: ${process.env.PLAN_CHANGE}`,
+              `- Resources to destroy: ${process.env.PLAN_DESTROY}`,
+              '',
+              '## Plan Details (excerpt)',
+              planText.substring(0, 4000),
+              '',
+              '## Security Scan (tfsec)',
+              `- Critical: ${process.env.TFSEC_CRITICAL}`,
+              `- High: ${process.env.TFSEC_HIGH}`,
+              `- Medium: ${process.env.TFSEC_MEDIUM}`,
+              `- Low: ${process.env.TFSEC_LOW}`,
+              '',
+              '### Findings',
+              tfsecDetails,
+              '',
+              '## IaC Stats',
+              `- Terraform files: ${process.env.TF_FILES}`,
+              `- Resource definitions: ${process.env.TF_RESOURCES}`,
+              `- Module references: ${process.env.TF_MODULES}`,
+              '',
+              '## Terraform Source Code',
+              tfCode.substring(0, 6000),
+              '',
+              'Provide your analysis in this EXACT format:',
+              '',
+              '### 🏆 Infrastructure Score: X/10',
+              '',
+              '### 🔄 Plan Risk Assessment',
+              '(analyze planned changes — flag any destructive operations, resource replacements, or changes that could cause downtime for a fintech service)',
+              '',
+              '### 🔒 Security Analysis',
+              '(evaluate tfsec findings, prioritize by severity, check for: network exposure, encryption at rest/transit, RBAC, secrets management, and fintech compliance concerns)',
+              '',
+              '### 💰 Cost & Sizing Review',
+              '(evaluate VM sizes, SKUs, autoscaling configs, storage — suggest optimizations while maintaining reliability for a financial application)',
+              '',
+              '### 🏗️ Architecture Best Practices',
+              '(evaluate module structure, networking design, HA/DR posture, monitoring, and Azure Well-Architected Framework alignment)',
+              '',
+              '### 📋 Top 5 Action Items',
+              '(prioritized, specific, actionable improvements — focus on security and reliability for fintech)',
+              '',
+              'Be concise, specific to THIS infrastructure, and focus on fintech-relevant concerns (data protection, high availability, compliance).'
+            ];
+            const prompt = promptLines.join('\n');
 
             let aiAnalysis = '';
             const apiKey = process.env.GITHUB_TOKEN;
