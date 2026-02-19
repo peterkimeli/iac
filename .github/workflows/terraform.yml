@@ -295,33 +295,36 @@ jobs:
             }
 
             // --- Build final report ---
-            const report = `# 🤖 AI Infrastructure Review
-
-## Plan Summary
-| Metric | Value |
-|--------|-------|
-| ➕ Resources to Add | ${process.env.PLAN_ADD} |
-| 🔄 Resources to Change | ${process.env.PLAN_CHANGE} |
-| 🗑️ Resources to Destroy | ${process.env.PLAN_DESTROY} |
-
-## Security Scan
-| Severity | Count |
-|----------|-------|
-| 🔴 Critical | ${process.env.TFSEC_CRITICAL} |
-| 🟠 High | ${process.env.TFSEC_HIGH} |
-| 🟡 Medium | ${process.env.TFSEC_MEDIUM} |
-| 🔵 Low | ${process.env.TFSEC_LOW} |
-
-## IaC Stats
-| Metric | Value |
-|--------|-------|
-| 📄 Terraform Files | ${process.env.TF_FILES} |
-| 📦 Resource Definitions | ${process.env.TF_RESOURCES} |
-| 🧩 Modules | ${process.env.TF_MODULES} |
-
----
-
-${aiAnalysis}`;
+            const reportLines = [
+              '# 🤖 AI Infrastructure Review',
+              '',
+              '## Plan Summary',
+              '| Metric | Value |',
+              '|--------|-------|',
+              `| ➕ Resources to Add | ${process.env.PLAN_ADD} |`,
+              `| 🔄 Resources to Change | ${process.env.PLAN_CHANGE} |`,
+              `| 🗑️ Resources to Destroy | ${process.env.PLAN_DESTROY} |`,
+              '',
+              '## Security Scan',
+              '| Severity | Count |',
+              '|----------|-------|',
+              `| 🔴 Critical | ${process.env.TFSEC_CRITICAL} |`,
+              `| 🟠 High | ${process.env.TFSEC_HIGH} |`,
+              `| 🟡 Medium | ${process.env.TFSEC_MEDIUM} |`,
+              `| 🔵 Low | ${process.env.TFSEC_LOW} |`,
+              '',
+              '## IaC Stats',
+              '| Metric | Value |',
+              '|--------|-------|',
+              `| 📄 Terraform Files | ${process.env.TF_FILES} |`,
+              `| 📦 Resource Definitions | ${process.env.TF_RESOURCES} |`,
+              `| 🧩 Modules | ${process.env.TF_MODULES} |`,
+              '',
+              '---',
+              '',
+              aiAnalysis
+            ];
+            const report = reportLines.join('\n');
 
             // Post as job summary
             await core.summary.addRaw(report).write();
