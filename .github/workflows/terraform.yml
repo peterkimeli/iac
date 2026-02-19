@@ -10,6 +10,7 @@ permissions:
   id-token: write    # For OIDC auth with Azure
   contents: read
   pull-requests: write
+  models: read
 
 concurrency:
   group: terraform-${{ github.ref }}
@@ -68,6 +69,288 @@ jobs:
           working_directory: .
           soft_fail: true
 
+      - name: Run tfsec (JSON output)
+        continue-on-error: true
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/src" aquasec/tfsec /src --format json --soft-fail 2>/dev/null > tfsec-results.json || echo '{"results": []}' > tfsec-results.json
+
+      - name: Upload tfsec results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfsec-results
+          path: tfsec-results.json
+          retention-days: 5
+
+  # ─────────────────────────────────────────────────────────────
+  # AI Infrastructure Review
+  # Analyzes Terraform plan output, tfsec security findings,
+  # and IaC code patterns, then posts an AI summary.
+  # ─────────────────────────────────────────────────────────────
+  ai-infra-review:
+    name: AI Infrastructure Review
+    runs-on: ubuntu-latest
+    needs: [plan-dev, security]
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download plan text
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-text-dev
+          path: plan-output/
+        continue-on-error: true
+
+      - name: Download tfsec results
+        uses: actions/download-artifact@v4
+        with:
+          name: tfsec-results
+          path: tfsec-output/
+        continue-on-error: true
+
+      - name: Collect IaC metrics
+        id: metrics
+        run: |
+          # --- Parse plan summary ---
+          PLAN_FILE="plan-output/tfplan.txt"
+          if [ -f "$PLAN_FILE" ]; then
+            ADD=$(grep -oP '(\d+) to add' "$PLAN_FILE" | grep -oP '\d+' || echo "0")
+            CHANGE=$(grep -oP '(\d+) to change' "$PLAN_FILE" | grep -oP '\d+' || echo "0")
+            DESTROY=$(grep -oP '(\d+) to destroy' "$PLAN_FILE" | grep -oP '\d+' || echo "0")
+            echo "plan_add=${ADD}" >> $GITHUB_OUTPUT
+            echo "plan_change=${CHANGE}" >> $GITHUB_OUTPUT
+            echo "plan_destroy=${DESTROY}" >> $GITHUB_OUTPUT
+          else
+            echo "plan_add=N/A" >> $GITHUB_OUTPUT
+            echo "plan_change=N/A" >> $GITHUB_OUTPUT
+            echo "plan_destroy=N/A" >> $GITHUB_OUTPUT
+          fi
+
+          # --- Parse tfsec findings ---
+          TFSEC_FILE="tfsec-output/tfsec-results.json"
+          if [ -f "$TFSEC_FILE" ]; then
+            CRITICAL=$(jq '[.results[]? | select(.severity=="CRITICAL")] | length' "$TFSEC_FILE" 2>/dev/null || echo "0")
+            HIGH=$(jq '[.results[]? | select(.severity=="HIGH")] | length' "$TFSEC_FILE" 2>/dev/null || echo "0")
+            MEDIUM=$(jq '[.results[]? | select(.severity=="MEDIUM")] | length' "$TFSEC_FILE" 2>/dev/null || echo "0")
+            LOW=$(jq '[.results[]? | select(.severity=="LOW")] | length' "$TFSEC_FILE" 2>/dev/null || echo "0")
+            TOTAL=$(jq '.results? | length' "$TFSEC_FILE" 2>/dev/null || echo "0")
+            echo "tfsec_critical=${CRITICAL}" >> $GITHUB_OUTPUT
+            echo "tfsec_high=${HIGH}" >> $GITHUB_OUTPUT
+            echo "tfsec_medium=${MEDIUM}" >> $GITHUB_OUTPUT
+            echo "tfsec_low=${LOW}" >> $GITHUB_OUTPUT
+            echo "tfsec_total=${TOTAL}" >> $GITHUB_OUTPUT
+          else
+            echo "tfsec_critical=0" >> $GITHUB_OUTPUT
+            echo "tfsec_high=0" >> $GITHUB_OUTPUT
+            echo "tfsec_medium=0" >> $GITHUB_OUTPUT
+            echo "tfsec_low=0" >> $GITHUB_OUTPUT
+            echo "tfsec_total=0" >> $GITHUB_OUTPUT
+          fi
+
+          # --- Count Terraform resources ---
+          TF_FILES=$(find modules envs -name '*.tf' 2>/dev/null | wc -l)
+          TF_RESOURCES=$(grep -r '^resource ' modules/ envs/ 2>/dev/null | wc -l)
+          TF_MODULES=$(grep -r '^module ' envs/ 2>/dev/null | wc -l)
+          echo "tf_files=${TF_FILES}" >> $GITHUB_OUTPUT
+          echo "tf_resources=${TF_RESOURCES}" >> $GITHUB_OUTPUT
+          echo "tf_modules=${TF_MODULES}" >> $GITHUB_OUTPUT
+
+      - name: AI Infrastructure Analysis
+        uses: actions/github-script@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLAN_ADD: ${{ steps.metrics.outputs.plan_add }}
+          PLAN_CHANGE: ${{ steps.metrics.outputs.plan_change }}
+          PLAN_DESTROY: ${{ steps.metrics.outputs.plan_destroy }}
+          TFSEC_CRITICAL: ${{ steps.metrics.outputs.tfsec_critical }}
+          TFSEC_HIGH: ${{ steps.metrics.outputs.tfsec_high }}
+          TFSEC_MEDIUM: ${{ steps.metrics.outputs.tfsec_medium }}
+          TFSEC_LOW: ${{ steps.metrics.outputs.tfsec_low }}
+          TFSEC_TOTAL: ${{ steps.metrics.outputs.tfsec_total }}
+          TF_FILES: ${{ steps.metrics.outputs.tf_files }}
+          TF_RESOURCES: ${{ steps.metrics.outputs.tf_resources }}
+          TF_MODULES: ${{ steps.metrics.outputs.tf_modules }}
+        with:
+          script: |
+            const fs = require('fs');
+
+            // --- Read plan text ---
+            let planText = '';
+            try {
+              planText = fs.readFileSync('plan-output/tfplan.txt', 'utf8').substring(0, 8000);
+            } catch(e) { planText = 'Plan output not available'; }
+
+            // --- Read tfsec findings ---
+            let tfsecDetails = '';
+            try {
+              const raw = fs.readFileSync('tfsec-output/tfsec-results.json', 'utf8');
+              const data = JSON.parse(raw);
+              const results = (data.results || []).slice(0, 20);
+              tfsecDetails = results.map(r => {
+                return `- [${r.severity}] ${r.rule_id}: ${r.rule_description} (${r.location?.filename}:${r.location?.start_line})`;
+              }).join('\n') || 'No findings';
+            } catch(e) { tfsecDetails = 'No tfsec data available'; }
+
+            // --- Read Terraform source files ---
+            let tfCode = '';
+            const readTfFiles = (dir) => {
+              try {
+                const items = fs.readdirSync(dir, { withFileTypes: true });
+                for (const item of items) {
+                  const path = `${dir}/${item.name}`;
+                  if (item.isDirectory()) readTfFiles(path);
+                  else if (item.name.endsWith('.tf') && !item.name.includes('terraform.tfvars')) {
+                    const content = fs.readFileSync(path, 'utf8');
+                    tfCode += `\n--- ${path} ---\n${content.substring(0, 2000)}\n`;
+                  }
+                }
+              } catch(e) {}
+            };
+            readTfFiles('modules');
+            readTfFiles('envs/dev');
+
+            // --- Build AI prompt ---
+            const prompt = `You are a senior cloud infrastructure engineer specializing in Azure and Terraform. Analyze this IaC pipeline data for a fintech microservice deployment.
+
+## Project: Fintech Account Service — Azure Infrastructure (AKS + PostgreSQL + ACR)
+## Region: South Africa North
+
+## Terraform Plan Summary
+- Resources to add: ${process.env.PLAN_ADD}
+- Resources to change: ${process.env.PLAN_CHANGE}
+- Resources to destroy: ${process.env.PLAN_DESTROY}
+
+## Plan Details (excerpt)
+${planText.substring(0, 4000)}
+
+## Security Scan (tfsec)
+- Critical: ${process.env.TFSEC_CRITICAL}
+- High: ${process.env.TFSEC_HIGH}
+- Medium: ${process.env.TFSEC_MEDIUM}
+- Low: ${process.env.TFSEC_LOW}
+
+### Findings
+${tfsecDetails}
+
+## IaC Stats
+- Terraform files: ${process.env.TF_FILES}
+- Resource definitions: ${process.env.TF_RESOURCES}
+- Module references: ${process.env.TF_MODULES}
+
+## Terraform Source Code
+${tfCode.substring(0, 6000)}
+
+Provide your analysis in this EXACT format:
+
+### 🏆 Infrastructure Score: X/10
+
+### 🔄 Plan Risk Assessment
+(analyze planned changes — flag any destructive operations, resource replacements, or changes that could cause downtime for a fintech service)
+
+### 🔒 Security Analysis
+(evaluate tfsec findings, prioritize by severity, check for: network exposure, encryption at rest/transit, RBAC, secrets management, and fintech compliance concerns)
+
+### 💰 Cost & Sizing Review
+(evaluate VM sizes, SKUs, autoscaling configs, storage — suggest optimizations while maintaining reliability for a financial application)
+
+### 🏗️ Architecture Best Practices
+(evaluate module structure, networking design, HA/DR posture, monitoring, and Azure Well-Architected Framework alignment)
+
+### 📋 Top 5 Action Items
+(prioritized, specific, actionable improvements — focus on security and reliability for fintech)
+
+Be concise, specific to THIS infrastructure, and focus on fintech-relevant concerns (data protection, high availability, compliance).`;
+
+            let aiAnalysis = '';
+            const apiKey = process.env.GITHUB_TOKEN;
+
+            if (apiKey) {
+              try {
+                const response = await fetch('https://models.inference.ai.azure.com/chat/completions', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                  },
+                  body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [{ role: 'user', content: prompt }],
+                    max_tokens: 2500,
+                    temperature: 0.3
+                  })
+                });
+                const data = await response.json();
+                aiAnalysis = data.choices?.[0]?.message?.content || 'AI analysis unavailable';
+              } catch(e) {
+                aiAnalysis = `AI analysis failed: ${e.message}`;
+              }
+            } else {
+              aiAnalysis = '';
+            }
+
+            // --- Build final report ---
+            const report = `# 🤖 AI Infrastructure Review
+
+## Plan Summary
+| Metric | Value |
+|--------|-------|
+| ➕ Resources to Add | ${process.env.PLAN_ADD} |
+| 🔄 Resources to Change | ${process.env.PLAN_CHANGE} |
+| 🗑️ Resources to Destroy | ${process.env.PLAN_DESTROY} |
+
+## Security Scan
+| Severity | Count |
+|----------|-------|
+| 🔴 Critical | ${process.env.TFSEC_CRITICAL} |
+| 🟠 High | ${process.env.TFSEC_HIGH} |
+| 🟡 Medium | ${process.env.TFSEC_MEDIUM} |
+| 🔵 Low | ${process.env.TFSEC_LOW} |
+
+## IaC Stats
+| Metric | Value |
+|--------|-------|
+| 📄 Terraform Files | ${process.env.TF_FILES} |
+| 📦 Resource Definitions | ${process.env.TF_RESOURCES} |
+| 🧩 Modules | ${process.env.TF_MODULES} |
+
+---
+
+${aiAnalysis}`;
+
+            // Post as job summary
+            await core.summary.addRaw(report).write();
+
+            // Post as PR comment if applicable
+            if (context.payload.pull_request) {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number
+              });
+              const botComment = comments.find(c =>
+                c.body.includes('🤖 AI Infrastructure Review') && c.user.type === 'Bot'
+              );
+              const body = report;
+              if (botComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.payload.pull_request.number,
+                  body
+                });
+              }
+            }
+
   # ──────────────────────────────────────────────
   # Plan (dev)
   # ──────────────────────────────────────────────
@@ -109,11 +392,22 @@ jobs:
           TF_VAR_subscription_id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           TF_VAR_tenant_id: ${{ secrets.ARM_TENANT_ID }}
 
+      - name: Export plan as text
+        working-directory: envs/dev
+        run: terraform show -no-color tfplan > tfplan.txt
+
       - name: Upload plan artifact
         uses: actions/upload-artifact@v4
         with:
           name: tfplan-dev
           path: envs/dev/tfplan
+          retention-days: 5
+
+      - name: Upload plan text artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-text-dev
+          path: envs/dev/tfplan.txt
           retention-days: 5
 
       - name: Post plan to PR
