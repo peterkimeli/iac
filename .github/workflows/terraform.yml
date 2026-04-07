@@ -76,11 +76,13 @@ jobs:
 
       - name: Upload tfsec results
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: tfsec-results
           path: tfsec-results.json
           retention-days: 1
+          if-no-files-found: ignore
 
   # ─────────────────────────────────────────────────────────────
   # AI Infrastructure Review
@@ -409,6 +411,7 @@ jobs:
         run: terraform show -no-color tfplan > tfplan.txt
 
       - name: Upload plan artifact
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: tfplan-dev
@@ -416,6 +419,7 @@ jobs:
           retention-days: 1
 
       - name: Upload plan text artifact
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: tfplan-text-dev
