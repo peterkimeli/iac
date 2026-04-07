@@ -29,7 +29,7 @@ jobs:
   # ──────────────────────────────────────────────
   validate:
     name: Validate
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,7 +57,7 @@ jobs:
   # ──────────────────────────────────────────────
   security:
     name: Security Scan
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: validate
     steps:
       - name: Checkout
@@ -89,7 +89,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   ai-infra-review:
     name: AI Infrastructure Review
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [plan-dev, security]
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
 
@@ -362,7 +362,7 @@ jobs:
   # ──────────────────────────────────────────────
   plan-dev:
     name: Plan (dev)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: validate
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     environment: dev
@@ -430,7 +430,7 @@ jobs:
   # ──────────────────────────────────────────────
   apply-dev:
     name: Apply (dev)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [plan-dev, security]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
