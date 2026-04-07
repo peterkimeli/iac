@@ -437,11 +437,14 @@ jobs:
 
   # ──────────────────────────────────────────────
   # Apply (dev) — only on push to main
+  # Plans inline then applies the saved plan to
+  # guarantee apply matches plan exactly.
+  # Blocks if plan shows any destructions.
   # ──────────────────────────────────────────────
   apply-dev:
     name: Apply (dev)
     runs-on: self-hosted
-    needs: [plan-dev, security]
+    needs: [plan-dev, security, ai-infra-review]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
       name: dev
@@ -472,12 +475,30 @@ jobs:
         working-directory: envs/dev
         run: terraform init
 
-      - name: Terraform apply
+      - name: Terraform plan (for apply)
         working-directory: envs/dev
         run: |
-          terraform apply -auto-approve \
+          terraform plan \
             -var="postgres_admin_username=${{ secrets.POSTGRES_ADMIN_USERNAME }}" \
-            -var="postgres_admin_password=${{ secrets.POSTGRES_ADMIN_PASSWORD }}"
+            -var="postgres_admin_password=${{ secrets.POSTGRES_ADMIN_PASSWORD }}" \
+            -out=tfplan-apply
         env:
           TF_VAR_subscription_id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           TF_VAR_tenant_id: ${{ secrets.ARM_TENANT_ID }}
+
+      - name: Check for destructive changes
+        working-directory: envs/dev
+        run: |
+          DESTROY_COUNT=$(terraform show -json tfplan-apply | jq '[.resource_changes[]? | select(.change.actions[] == "delete")] | length')
+          echo "Resources to destroy: $DESTROY_COUNT"
+          if [ "$DESTROY_COUNT" -gt "0" ]; then
+            echo "::error::Plan contains $DESTROY_COUNT resource destruction(s). Apply blocked."
+            echo "Resources flagged for deletion:"
+            terraform show -json tfplan-apply | jq -r '.resource_changes[]? | select(.change.actions[] == "delete") | "  - \(.address)"'
+            exit 1
+          fi
+          echo "No destructions detected — safe to apply."
+
+      - name: Terraform apply
+        working-directory: envs/dev
+        run: terraform apply -auto-approve tfplan-apply
