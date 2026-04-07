@@ -136,3 +136,24 @@ variable "app_node_max_count" {
   type        = number
   default     = 5
 }
+
+# ──────────────────────────────────────────────
+# Key Vault
+# ──────────────────────────────────────────────
+variable "app_namespace" {
+  description = "K8s namespace the app ServiceAccount lives in"
+  type        = string
+  default     = "account-service"
+}
+
+variable "app_service_account_name" {
+  description = "K8s ServiceAccount name that ESO uses"
+  type        = string
+  default     = "ms-account-service"
+}
+
+variable "keyvault_db_pool_size" {
+  description = "HikariCP max pool size stored as a Key Vault secret"
+  type        = string
+  default     = "10"
+}

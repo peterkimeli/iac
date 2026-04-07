@@ -67,3 +67,32 @@ output "connect_to_aks" {
   description = "Command to connect to the AKS cluster"
   value       = "az aks get-credentials --resource-group ${azurerm_resource_group.main.name} --name ${module.aks.cluster_name}"
 }
+
+# ──────────────────────────────────────────────
+# Key Vault
+# ──────────────────────────────────────────────
+output "keyvault_name" {
+  description = "Key Vault name"
+  value       = module.keyvault.keyvault_name
+}
+
+output "keyvault_uri" {
+  description = "Key Vault URI"
+  value       = module.keyvault.keyvault_uri
+}
+
+output "eso_identity_client_id" {
+  description = "Managed identity client ID — set this in gitops values.yaml secretStore.azure.clientId"
+  value       = module.keyvault.eso_identity_client_id
+}
+
+output "gitops_values_patch" {
+  description = "Copy-paste this into k8s-gitops/apps/ms-account-service/values.yaml"
+  value       = <<-EOT
+    secretStore:
+      azure:
+        keyvaultName: "${module.keyvault.keyvault_name}"
+        tenantId:     "${var.tenant_id}"
+        clientId:     "${module.keyvault.eso_identity_client_id}"
+  EOT
+}

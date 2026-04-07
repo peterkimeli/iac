@@ -107,3 +107,32 @@ module "postgresql" {
 
   depends_on = [module.networking]
 }
+
+# ──────────────────────────────────────────────
+# Key Vault + Workload Identity (ESO)
+# ──────────────────────────────────────────────
+module "keyvault" {
+  source = "../../modules/keyvault"
+
+  project             = var.project
+  environment         = var.environment
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  tenant_id           = var.tenant_id
+
+  # Workload Identity — from AKS OIDC issuer
+  aks_oidc_issuer_url      = module.aks.oidc_issuer_url
+  app_namespace            = var.app_namespace
+  app_service_account_name = var.app_service_account_name
+
+  # Seed PostgreSQL secrets into Key Vault
+  db_server_fqdn = module.postgresql.server_fqdn
+  db_name        = "fintech_accounts"
+  db_username    = var.postgres_admin_username
+  db_password    = var.postgres_admin_password
+  db_pool_size   = var.keyvault_db_pool_size
+
+  tags = local.tags
+
+  depends_on = [module.aks, module.postgresql]
+}
