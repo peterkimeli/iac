@@ -80,7 +80,7 @@ jobs:
         with:
           name: tfsec-results
           path: tfsec-results.json
-          retention-days: 5
+          retention-days: 1
 
   # ─────────────────────────────────────────────────────────────
   # AI Infrastructure Review
@@ -413,14 +413,14 @@ jobs:
         with:
           name: tfplan-dev
           path: envs/dev/tfplan
-          retention-days: 5
+          retention-days: 1
 
       - name: Upload plan text artifact
         uses: actions/upload-artifact@v4
         with:
           name: tfplan-text-dev
           path: envs/dev/tfplan.txt
-          retention-days: 5
+          retention-days: 1
 
       - name: Post plan to PR
         if: github.event_name == 'pull_request'
