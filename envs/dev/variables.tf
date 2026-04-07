@@ -116,7 +116,7 @@ variable "system_node_max_count" {
 variable "app_node_vm_size" {
   description = "VM size for app/user nodes"
   type        = string
-  default     = "Standard_B2s_v2"
+  default     = "Standard_D2s_v3"
 }
 
 variable "app_node_count" {

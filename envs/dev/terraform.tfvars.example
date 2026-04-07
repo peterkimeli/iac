@@ -31,7 +31,7 @@ system_node_min_count = 1
 system_node_max_count = 3
 
 # App (user) node pool
-app_node_vm_size   = "Standard_B2s_v2"
+app_node_vm_size   = "Standard_D2s_v3"
 app_node_count     = 1
 app_node_min_count = 1
 app_node_max_count = 5
