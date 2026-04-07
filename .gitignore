@@ -11,8 +11,8 @@ override.tf.json
 *_override.tf.json
 
 # Secrets — never commit these
+*.tfvars
 *.auto.tfvars
-!terraform.tfvars
 
 # OS
 .DS_Store
