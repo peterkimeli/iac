@@ -18,8 +18,12 @@
 
 data "azurerm_client_config" "current" {}
 
+resource "random_id" "kv_suffix" {
+  byte_length = 3
+}
+
 locals {
-  keyvault_name = "kv-${var.project}-${var.environment}"
+  keyvault_name = "kv-${var.project}-${var.environment}-${random_id.kv_suffix.hex}"
   identity_name = "mi-${var.project}-eso-${var.environment}"
 }
 

@@ -528,10 +528,6 @@ jobs:
           fi
           echo "No destructions detected — safe to apply."
 
-      - name: Purge soft-deleted Key Vault (if exists)
-        continue-on-error: true
-        run: |
-          az keyvault purge --name kv-accountsvc-dev --location southafricanorth 2>/dev/null || echo "No soft-deleted vault to purge"
 
       - name: Terraform apply
         working-directory: envs/dev
