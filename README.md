@@ -1,3 +1,5 @@
+[![Terraform CI/CD](https://github.com/peterkimeli/iac/actions/workflows/terraform.yml/badge.svg)](https://github.com/peterkimeli/iac/actions/workflows/terraform.yml)
+
 # Infrastructure as Code — ms-account-service
 
 Terraform modules and Kubernetes manifests for deploying the **ms-account-service** to Azure Kubernetes Service (AKS).

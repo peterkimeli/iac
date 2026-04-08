@@ -9,6 +9,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   workload_identity_enabled = true
 
   default_node_pool {
+    temporary_name_for_rotation = "tmppool"
     name                = "system"
     vm_size             = var.system_node_vm_size
     vnet_subnet_id      = var.aks_subnet_id
@@ -48,7 +49,6 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   azure_active_directory_role_based_access_control {
-    managed            = true
     azure_rbac_enabled = true
     tenant_id          = var.tenant_id
   }
