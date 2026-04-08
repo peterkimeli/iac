@@ -22,6 +22,10 @@ env:
   ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
   ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
   ARM_USE_OIDC: true
+  # Pin environment-specific vars so the plan always matches deployed state
+  TF_VAR_location: "southafricanorth"
+  TF_VAR_subscription_id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+  TF_VAR_tenant_id: ${{ secrets.ARM_TENANT_ID }}
 
 jobs:
   # ──────────────────────────────────────────────
@@ -402,9 +406,6 @@ jobs:
             -var="postgres_admin_username=${{ secrets.POSTGRES_ADMIN_USERNAME }}" \
             -var="postgres_admin_password=${{ secrets.POSTGRES_ADMIN_PASSWORD }}" \
             -out=tfplan
-        env:
-          TF_VAR_subscription_id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-          TF_VAR_tenant_id: ${{ secrets.ARM_TENANT_ID }}
 
       - name: Export plan as text
         working-directory: envs/dev
@@ -482,9 +483,6 @@ jobs:
             -var="postgres_admin_username=${{ secrets.POSTGRES_ADMIN_USERNAME }}" \
             -var="postgres_admin_password=${{ secrets.POSTGRES_ADMIN_PASSWORD }}" \
             -out=tfplan-apply
-        env:
-          TF_VAR_subscription_id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-          TF_VAR_tenant_id: ${{ secrets.ARM_TENANT_ID }}
 
       - name: Check for destructive changes
         working-directory: envs/dev
