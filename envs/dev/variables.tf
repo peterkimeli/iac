@@ -143,7 +143,7 @@ variable "app_node_max_count" {
 variable "app_namespace" {
   description = "K8s namespace the app ServiceAccount lives in"
   type        = string
-  default     = "account-service"
+  default     = "accountsvc-dev"
 }
 
 variable "app_service_account_name" {
