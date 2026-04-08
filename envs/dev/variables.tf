@@ -56,7 +56,7 @@ variable "postgres_subnet_cidr" {
 variable "kubernetes_version" {
   description = "Kubernetes version"
   type        = string
-  default     = "1.29"
+  default     = "1.34"
 }
 
 variable "system_node_count" {
