@@ -11,6 +11,7 @@ permissions:
   contents: read
   pull-requests: write
   models: read
+  actions: write      # For artifact cleanup
 
 concurrency:
   group: terraform-${{ github.ref }}
@@ -29,10 +30,37 @@ env:
 
 jobs:
   # ──────────────────────────────────────────────
+  # Cleanup old artifacts to free storage quota
+  # ──────────────────────────────────────────────
+  cleanup-artifacts:
+    name: Cleanup Old Artifacts
+    runs-on: self-hosted
+    steps:
+      - name: Delete old artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const res = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            for (const artifact of res.data.artifacts) {
+              console.log(`Deleting artifact: ${artifact.name} (${artifact.id})`);
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id
+              }).catch(e => console.log(`Skip: ${e.message}`));
+            }
+            console.log(`Cleaned up ${res.data.artifacts.length} artifacts`);
+
+  # ──────────────────────────────────────────────
   # Lint & validate
   # ──────────────────────────────────────────────
   validate:
     name: Validate
+    needs: cleanup-artifacts
     runs-on: self-hosted
     steps:
       - name: Checkout
@@ -86,6 +114,7 @@ jobs:
           name: tfsec-results
           path: tfsec-results.json
           retention-days: 1
+          overwrite: true
           if-no-files-found: ignore
 
   # ─────────────────────────────────────────────────────────────
@@ -418,6 +447,7 @@ jobs:
           name: tfplan-dev
           path: envs/dev/tfplan
           retention-days: 1
+          overwrite: true
 
       - name: Upload plan text artifact
         continue-on-error: true
@@ -426,6 +456,7 @@ jobs:
           name: tfplan-text-dev
           path: envs/dev/tfplan.txt
           retention-days: 1
+          overwrite: true
 
       - name: Post plan to PR
         if: github.event_name == 'pull_request'
