@@ -70,7 +70,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "app" {
   vnet_subnet_id        = var.aks_subnet_id
   os_disk_size_gb       = var.os_disk_size_gb
   zones                 = var.availability_zones
-  max_pods              = 50
+  max_pods              = 30
   mode                  = "User"
 
   # Autoscaling

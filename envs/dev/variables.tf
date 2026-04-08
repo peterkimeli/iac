@@ -134,7 +134,7 @@ variable "app_node_min_count" {
 variable "app_node_max_count" {
   description = "Maximum app nodes (autoscaler)"
   type        = number
-  default     = 5
+  default     = 3
 }
 
 # ──────────────────────────────────────────────

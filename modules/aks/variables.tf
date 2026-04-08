@@ -81,7 +81,7 @@ variable "app_node_max_count" {
 variable "os_disk_size_gb" {
   description = "OS disk size in GB"
   type        = number
-  default     = 30
+  default     = 128
 }
 
 variable "availability_zones" {
