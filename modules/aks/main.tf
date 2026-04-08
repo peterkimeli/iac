@@ -9,7 +9,6 @@ resource "azurerm_kubernetes_cluster" "main" {
   workload_identity_enabled = true
 
   default_node_pool {
-    temporary_name_for_rotation = "tmppool"
     name                = "system"
     vm_size             = var.system_node_vm_size
     vnet_subnet_id      = var.aks_subnet_id
@@ -60,6 +59,17 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      default_node_pool[0].vm_size,
+      default_node_pool[0].os_disk_size_gb,
+      default_node_pool[0].max_pods,
+      default_node_pool[0].only_critical_addons_enabled,
+      default_node_pool[0].vnet_subnet_id,
+      default_node_pool[0].zones,
+    ]
+  }
 }
 
 # App (user) node pool for workloads
